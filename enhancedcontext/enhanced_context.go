@@ -26,11 +26,8 @@ func extractCityFromQuery(query string) string {
 
 	patterns := []string{
 		`(?i)weather in (.+?)(\s|$|\?)`,
-		`(?i)vremea în (.+?)(\s|$|\?)`,
 		`(?i)how.+weather.+in (.+?)(\s|$|\?)`,
-		`(?i)cum.+vreme.+în (.+?)(\s|$|\?)`,
 		`(?i)temperature in (.+?)(\s|$|\?)`,
-		`(?i)temperatura în (.+?)(\s|$|\?)`,
 	}
 
 	for _, pattern := range patterns {
