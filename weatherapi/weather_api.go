@@ -41,7 +41,7 @@ type OpenWeatherResponse struct {
 }
 
 func GetWeather(city string) (*WeatherData, error) {
-	apiKey := "Your Key"
+	apiKey := "your_key"
 	apiURL := fmt.Sprintf("https://api.openweathermap.org/data/2.5/forecast?q=%s&appid=%s&units=metric", city, apiKey)
 
 	client := &http.Client{
@@ -50,34 +50,34 @@ func GetWeather(city string) (*WeatherData, error) {
 
 	req, err := http.NewRequest("GET", apiURL, nil)
 	if err != nil {
-		return nil, fmt.Errorf("eroare la crearea request-ului: %w", err)
+		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("eroare la apelarea API-ului: %w", err)
+		return nil, fmt.Errorf("error calling API: %w", err)
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API a returnat status: %d", res.StatusCode)
+		return nil, fmt.Errorf("API returned status: %d", res.StatusCode)
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, fmt.Errorf("eroare la citirea răspunsului: %w", err)
+		return nil, fmt.Errorf("error reading response: %w", err)
 	}
 
 	var apiResponse OpenWeatherResponse
 	err = json.Unmarshal(body, &apiResponse)
 	if err != nil {
-		return nil, fmt.Errorf("eroare la parsarea JSON: %w", err)
+		return nil, fmt.Errorf("error parsing JSON: %w", err)
 	}
 
 	if len(apiResponse.List) == 0 {
-		return nil, fmt.Errorf("nu s-au găsit date meteo pentru orașul %s", city)
+		return nil, fmt.Errorf("no weather data found for city %s", city)
 	}
 
 	firstForecast := apiResponse.List[0]
