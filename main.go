@@ -28,24 +28,24 @@ func main() {
 		os.Mkdir("assets", 0755)
 	}
 
-	fmt.Println("🔍 Verific dacă Ollama este disponibil...")
+	fmt.Println("🔍 Checking if Ollama is available...")
 	if err := ollama.CheckOllamaStatus(); err != nil {
 		fmt.Printf("❌ %v\n", err)
-		fmt.Println("\n🔋 Pentru a instala și rula Ollama:")
-		fmt.Println("1. Instalează: brew install ollama (sau https://ollama.ai/download)")
-		fmt.Println("2. Rulează în terminal: ollama pull llama3.2")
-		fmt.Println("3. Pornește serverul: ollama serve")
-		fmt.Println("\n🛑 Aplicația se oprește...")
+		fmt.Println("\n📋 To install and run Ollama:")
+		fmt.Println("1. Install: brew install ollama (or https://ollama.ai/download)")
+		fmt.Println("2. Run in terminal: ollama pull llama3.2")
+		fmt.Println("3. Start server: ollama serve")
+		fmt.Println("\n🛑 Application stopping...")
 		return
 	}
-	fmt.Println("✅ Ollama este funcțional!")
+	fmt.Println("✅ Ollama is functional!")
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
 		<-c
-		fmt.Println("\n\n👋 Aplicația se închide gracefully...")
+		fmt.Println("\n\n👋 Application closing gracefully...")
 		portaudio.Terminate()
 		os.Exit(0)
 	}()
@@ -53,15 +53,15 @@ func main() {
 	portaudio.Initialize()
 	defer portaudio.Terminate()
 
-	fmt.Println("🎙️ Mod conversație continuă activat!")
-	fmt.Println("🔢 Apasă Control+C pentru a ieși din aplicație")
+	fmt.Println("🎙️ Continuous conversation mode activated!")
+	fmt.Println("📢 Press Control+C to exit the application")
 
 	conversationCount := 0
 
 	for {
 		conversationCount++
-		fmt.Printf("\n🗣️ Conversația #%d\n", conversationCount)
-		fmt.Println("🎤 Apasă Enter pentru a porni înregistrarea...")
+		fmt.Printf("\n🗣️ Conversation #%d\n", conversationCount)
+		fmt.Println("🎤 Press Enter to start recording...")
 		bufio.NewReader(os.Stdin).ReadBytes('\n')
 
 		fileWav := "assets/audio.wav"
@@ -70,19 +70,19 @@ func main() {
 		in := make([]int16, 64)
 		stream, err := portaudio.OpenDefaultStream(1, 0, 44100, len(in), in)
 		if err != nil {
-			log.Printf("❌ Eroare PortAudio: %v", err)
+			log.Printf("❌ PortAudio error: %v", err)
 			continue
 		}
 
 		f, err := os.Create(fileWav)
 		if err != nil {
-			log.Printf("❌ Eroare creare fișier: %v", err)
+			log.Printf("❌ File creation error: %v", err)
 			stream.Close()
 			continue
 		}
 		enc := wav.NewEncoder(f, 44100, 16, 1, 1)
 
-		fmt.Println("🎙 Înregistrare... Apasă Enter pentru a opri.")
+		fmt.Println("🎙 Recording... Press Enter to stop.")
 		stream.Start()
 		stopChan := make(chan bool)
 
@@ -112,46 +112,46 @@ func main() {
 
 		cmd := exec.Command("ffmpeg", "-y", "-i", fileWav, "-c:a", "aac", fileM4a)
 		if err := cmd.Run(); err != nil {
-			log.Printf("❌ Eroare la conversie: %v", err)
+			log.Printf("❌ Conversion error: %v", err)
 			continue
 		}
 
 		os.Remove(fileWav)
 
-		fmt.Println("📝 Transcrierea audio...")
+		fmt.Println("🔄 Transcribing audio...")
 		transcribedText := poll.StartPolling()
 
 		if transcribedText == "" {
-			fmt.Println("❌ Nu s-a putut transcrie audio-ul")
-			fmt.Println("🔄 Încearcă din nou...")
+			fmt.Println("❌ Could not transcribe audio")
+			fmt.Println("🔄 Try again...")
 			continue
 		}
 
-		fmt.Printf("✅ Text transcris: %s\n", transcribedText)
+		fmt.Printf("✅ Transcribed text: %s\n", transcribedText)
 
-		fmt.Println("🤖 Se procesează întrebarea cu Ollama...")
+		fmt.Println("🤖 Processing question with Ollama...")
 		fullContext := getKevinContext() + "\n\n" + enhancedcontext.GetSpecializedContext(transcribedText)
 		response, err := ollama.AskWithContext(transcribedText, fullContext)
 		if err != nil {
-			log.Printf("❌ Eroare Ollama: %v", err)
-			fmt.Println("🔄 Încearcă din nou...")
+			log.Printf("❌ Ollama error: %v", err)
+			fmt.Println("🔄 Try again...")
 			continue
 		}
 
-		fmt.Printf("\n💬 Răspuns: %s\n", response)
+		fmt.Printf("\n💬 Response: %s\n", response)
 
-		fmt.Println("🎵 Generez audio...")
+		fmt.Println("🎵 Generating audio...")
 		if err := generateTTSWithFallbacks(response); err != nil {
-			log.Printf("❌ Nu s-a putut genera audio: %v", err)
-			fmt.Println("🔄 Gata pentru următoarea întrebare...")
+			log.Printf("❌ Could not generate audio: %v", err)
+			fmt.Println("🔄 Ready for next question...")
 			continue
 		}
 
 		if err := playAudio(); err != nil {
-			log.Printf("❌ Eroare la redarea audio: %v", err)
+			log.Printf("❌ Audio playback error: %v", err)
 		}
 
-		fmt.Println("🔄 Gata pentru următoarea întrebare...")
+		fmt.Println("🔄 Ready for next question...")
 	}
 }
 
@@ -159,42 +159,42 @@ func generateTTSWithFallbacks(response string) error {
 	cleanAudioFolder()
 
 	shortResponse := shortenResponse(response)
-	fmt.Printf("📝 Text pentru TTS (%d caractere): %s\n", len(shortResponse), shortResponse)
+	fmt.Printf("🔤 TTS text (%d characters): %s\n", len(shortResponse), shortResponse)
 
 	fallbacks := []struct {
 		name string
 		fn   func(string) error
 	}{
 		{"macOS say command", generateWithSayCommand},
-		{"htgo-tts scurt", func(text string) error { return generateWithHTGOTTS(text, true) }},
+		{"htgo-tts short", func(text string) error { return generateWithHTGOTTS(text, true) }},
 		{"htgo-tts standard", func(text string) error { return generateWithHTGOTTS(text, false) }},
 	}
 
 	for _, fallback := range fallbacks {
-		fmt.Printf("🔄 Încerc %s...\n", fallback.name)
+		fmt.Printf("🔄 Trying %s...\n", fallback.name)
 		if err := fallback.fn(shortResponse); err != nil {
-			fmt.Printf("❌ %s eșuat: %v\n", fallback.name, err)
+			fmt.Printf("❌ %s failed: %v\n", fallback.name, err)
 			continue
 		}
 
 		if isValidAudioFile("assets/response.mp3") {
-			fmt.Printf("✅ Audio generat cu succes folosind %s\n", fallback.name)
+			fmt.Printf("✅ Audio generated successfully using %s\n", fallback.name)
 			return nil
 		} else {
-			fmt.Printf("❌ %s a generat fișier invalid\n", fallback.name)
+			fmt.Printf("❌ %s generated invalid file\n", fallback.name)
 		}
 	}
 
-	return fmt.Errorf("toate metodele TTS au eșuat")
+	return fmt.Errorf("all TTS methods failed")
 }
 
 func generateWithSayCommand(text string) error {
 	if runtime.GOOS != "darwin" {
-		return fmt.Errorf("say command disponibil doar pe macOS")
+		return fmt.Errorf("say command only available on macOS")
 	}
 
 	if _, err := exec.LookPath("say"); err != nil {
-		return fmt.Errorf("say command nu este disponibil")
+		return fmt.Errorf("say command not available")
 	}
 
 	tempFile := "assets/temp_response.aiff"
@@ -202,14 +202,14 @@ func generateWithSayCommand(text string) error {
 
 	cmd := exec.Command("say", "-v", "Samantha", "-r", "180", "-o", tempFile, text)
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("eroare say command: %w", err)
+		return fmt.Errorf("say command error: %w", err)
 	}
 
 	if _, err := exec.LookPath("ffmpeg"); err == nil {
 		cmd = exec.Command("ffmpeg", "-y", "-i", tempFile, "-codec:a", "libmp3lame", "-b:a", "128k", finalFile)
 		if err := cmd.Run(); err != nil {
 			os.Remove(tempFile)
-			return fmt.Errorf("eroare conversie ffmpeg: %w", err)
+			return fmt.Errorf("ffmpeg conversion error: %w", err)
 		}
 		os.Remove(tempFile)
 	} else {
@@ -233,7 +233,7 @@ func generateWithHTGOTTS(text string, veryShort bool) error {
 	}
 
 	if err := speech.Speak(text); err != nil {
-		return fmt.Errorf("eroare htgo-tts: %w", err)
+		return fmt.Errorf("htgo-tts error: %w", err)
 	}
 
 	time.Sleep(3 * time.Second)
@@ -257,7 +257,7 @@ func findAndRenameGeneratedFile() error {
 		}
 	}
 
-	return fmt.Errorf("nu s-a găsit fișier audio valid")
+	return fmt.Errorf("no valid audio file found")
 }
 
 func isValidAudioFile(filepath string) bool {
@@ -343,11 +343,11 @@ func playAudio() error {
 	audioFile := "assets/response.mp3"
 
 	if _, err := os.Stat(audioFile); os.IsNotExist(err) {
-		return fmt.Errorf("fișierul %s nu există", audioFile)
+		return fmt.Errorf("file %s does not exist", audioFile)
 	}
 
 	if !isValidAudioFile(audioFile) {
-		return fmt.Errorf("fișierul audio nu este valid")
+		return fmt.Errorf("audio file is not valid")
 	}
 
 	players := []struct {
@@ -362,18 +362,18 @@ func playAudio() error {
 
 	for _, player := range players {
 		if _, err := exec.LookPath(player.cmd[0]); err == nil {
-			fmt.Printf("🔊 Redare cu %s...\n", player.name)
+			fmt.Printf("🔊 Playing with %s...\n", player.name)
 			cmd := exec.Command(player.cmd[0], player.cmd[1:]...)
 			if err := cmd.Run(); err == nil {
-				fmt.Printf("✅ Redare completă cu %s\n", player.name)
+				fmt.Printf("✅ Playback completed with %s\n", player.name)
 				return nil
 			} else {
-				fmt.Printf("❌ Eroare %s: %v\n", player.name, err)
+				fmt.Printf("❌ %s error: %v\n", player.name, err)
 			}
 		}
 	}
 
-	return fmt.Errorf("nu s-a găsit niciun audio player funcțional")
+	return fmt.Errorf("no functional audio player found")
 }
 
 func intSlice(in []int16) []int {
